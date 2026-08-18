@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import co.com.nequi.franchise.domain.exception.ProductNotFoundException;
+
 public record Branch(String id, String name, List<Product> products) {
 
 	private static final Comparator<Product> HIGHEST_STOCK_FIRST =
@@ -26,6 +28,10 @@ public record Branch(String id, String name, List<Product> products) {
 
 	public Optional<Product> findProduct(String productId) {
 		return products.stream().filter(product -> product.id().equals(productId)).findFirst();
+	}
+
+	public Product requireProduct(String productId) {
+		return findProduct(productId).orElseThrow(() -> new ProductNotFoundException(productId));
 	}
 
 	public Optional<Product> productWithHighestStock() {

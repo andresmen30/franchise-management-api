@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import co.com.nequi.franchise.domain.exception.BranchNotFoundException;
+
 public record Franchise(String id, String name, List<Branch> branches) {
 
 	public Franchise {
@@ -22,6 +24,10 @@ public record Franchise(String id, String name, List<Branch> branches) {
 
 	public Optional<Branch> findBranch(String branchId) {
 		return branches.stream().filter(branch -> branch.id().equals(branchId)).findFirst();
+	}
+
+	public Branch requireBranch(String branchId) {
+		return findBranch(branchId).orElseThrow(() -> new BranchNotFoundException(branchId));
 	}
 
 }

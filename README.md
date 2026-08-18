@@ -146,22 +146,71 @@ Criterios obligatorios primero; los puntos extra después.
 | Etapa | Rama | Estado |
 |---|---|---|
 | 0 · Scaffold, build y estructura hexagonal | `chore/project-setup` | ✅ |
-| 1 · Modelo de dominio e invariantes | `feature/domain-model` | ⏳ |
-| 2 · Casos de uso reactivos | `feature/use-cases` | ⏳ |
-| 3 · Adaptador DynamoDB + Docker Compose | `feature/dynamodb-adapter` | ⏳ |
-| 4 · Adaptador REST, validación y OpenAPI | `feature/rest-api` | ⏳ |
+| 1 · Modelo de dominio e invariantes | `feature/domain-model` | ✅ |
+| 2 · Casos de uso reactivos | `feature/use-cases` | ✅ |
+| 3 · Adaptador DynamoDB + Docker Compose | `feature/dynamodb-adapter` | ✅ |
+| 4 · Adaptador REST, validación y OpenAPI | `feature/rest-api` | ✅ |
 | 5 · ArchUnit, pruebas e2e y documentación | `feature/hardening` | ⏳ |
 | Extras · Docker, renombrados, Terraform, despliegue, CI | — | ⏳ |
 
-### Endpoints previstos
+## API
 
-Base: `/api/v1`
+Base: `/api/v1`. Los errores se devuelven como `application/problem+json` (RFC 9457).
 
-| Método | Ruta | Descripción |
+| Criterio | Método | Ruta | Éxito |
+|---|---|---|---|
+| 2 | `POST` | `/franchises` | `201` + `Location` |
+| 3 | `POST` | `/franchises/{fId}/branches` | `201` + `Location` |
+| 4 | `POST` | `/franchises/{fId}/branches/{bId}/products` | `201` + `Location` |
+| 5 | `DELETE` | `/franchises/{fId}/branches/{bId}/products/{pId}` | `204` |
+| 6 | `PUT` | `/franchises/{fId}/branches/{bId}/products/{pId}/stock` | `200` |
+| 7 | `GET` | `/franchises/{fId}/branches/top-stock-products` | `200` |
+
+El endpoint de stock usa `PUT` sobre el subrecurso `/stock` porque fijar el stock a un valor
+absoluto es un reemplazo idempotente: reintentar la misma petición no acumula. Un `POST` con
+un delta no lo sería.
+
+El listado de mayor stock omite las sucursales sin productos, y ante empate de stock desempata
+por nombre ascendente para que la respuesta no dependa del orden de almacenamiento.
+
+### Contrato de errores
+
+| Situación | Status | `code` |
 |---|---|---|
-| `POST` | `/franchises` | Agregar una franquicia |
-| `POST` | `/franchises/{fId}/branches` | Agregar una sucursal a una franquicia |
-| `POST` | `/franchises/{fId}/branches/{bId}/products` | Agregar un producto a una sucursal |
-| `DELETE` | `/franchises/{fId}/branches/{bId}/products/{pId}` | Eliminar un producto de una sucursal |
-| `PUT` | `/franchises/{fId}/branches/{bId}/products/{pId}/stock` | Modificar el stock de un producto |
-| `GET` | `/franchises/{fId}/branches/top-stock-products` | Producto con más stock por sucursal |
+| Campo inválido o ausente | `400` | `VALIDATION_ERROR` |
+| Cuerpo mal formado | `400` | `BAD_REQUEST` |
+| Franquicia inexistente | `404` | `FRANCHISE_NOT_FOUND` |
+| Sucursal inexistente | `404` | `BRANCH_NOT_FOUND` |
+| Producto inexistente | `404` | `PRODUCT_NOT_FOUND` |
+
+```json
+{
+  "type": "urn:franchise-api:solicitud-invalida",
+  "title": "Solicitud invalida",
+  "status": 400,
+  "detail": "Uno o mas campos de la solicitud no son validos",
+  "instance": "/api/v1/franchises",
+  "code": "VALIDATION_ERROR",
+  "errors": [ { "field": "name", "message": "must not be blank" } ]
+}
+```
+
+Las respuestas de error nunca incluyen stack traces, nombres de clases Java, detalles del SDK
+de AWS ni el valor rechazado.
+
+### Ejemplo de uso
+
+```bash
+curl -i -X POST localhost:8080/api/v1/franchises -H 'Content-Type: application/json' -d '{"name":"Nequi Store"}'
+```
+
+```bash
+curl -s localhost:8080/api/v1/franchises/$FRANCHISE_ID/branches/top-stock-products
+```
+
+```json
+[
+  { "branchId": "...", "branchName": "Norte",  "productId": "...", "productName": "Pan",  "stock": 120 },
+  { "branchId": "...", "branchName": "Centro", "productId": "...", "productName": "Cafe", "stock": 500 }
+]
+```

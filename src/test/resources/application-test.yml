@@ -1,0 +1,10 @@
+app:
+  dynamodb:
+    table-name: franchises-test
+    region: us-east-1
+    endpoint: http://localhost:8000
+
+logging:
+  level:
+    root: WARN
+    co.com.nequi.franchise: DEBUG

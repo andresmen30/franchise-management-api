@@ -37,26 +37,40 @@ nombre y un listado de productos; un producto, de un nombre y una cantidad de st
 
 ## Cómo ejecutar en local
 
-> El detalle completo (DynamoDB Local, creación de la tabla y ejemplos `curl`) se documenta
-> al cerrar la Etapa 3. Por ahora la aplicación arranca y expone `actuator` y Swagger UI.
-
-Compilar y ejecutar toda la batería de pruebas:
+### 1. Levantar DynamoDB Local
 
 ```bash
-./mvnw verify
+docker compose up -d
 ```
 
-Levantar la aplicación:
+Expone DynamoDB en `http://localhost:8000` con almacenamiento en memoria: al detener el
+contenedor los datos se pierden, que es lo deseable para desarrollo.
+
+### 2. Ejecutar la aplicación
 
 ```bash
-./mvnw spring-boot:run
+SPRING_PROFILES_ACTIVE=local ./mvnw spring-boot:run
 ```
+
+El perfil `local` apunta a DynamoDB Local y **crea la tabla al arrancar** si no existe.
+En cualquier otro perfil esa creación automática está apagada: en la nube la tabla se
+aprovisiona con infraestructura como código, no desde la aplicación.
 
 Una vez arriba:
 
 - Health check → `http://localhost:8080/actuator/health`
 - Swagger UI → `http://localhost:8080/swagger-ui.html`
 - OpenAPI JSON → `http://localhost:8080/v3/api-docs`
+
+### 3. Ejecutar las pruebas
+
+```bash
+./mvnw verify
+```
+
+Las unitarias corren siempre. Las de integración (`*IT`) levantan su propio contenedor de
+DynamoDB Local con Testcontainers, así que **requieren Docker en ejecución** pero no
+dependen del `docker compose` anterior.
 
 ### Configuración
 
@@ -69,7 +83,9 @@ Todo se parametriza por variable de entorno, con valores por defecto aptos para 
 | `AWS_REGION` | `us-east-1` | Región de AWS |
 | `DYNAMODB_ENDPOINT` | *(vacío)* | Vacío = AWS real. `http://localhost:8000` = DynamoDB Local |
 
-El perfil `local` (`SPRING_PROFILES_ACTIVE=local`) ya apunta a DynamoDB Local.
+Cuando `DYNAMODB_ENDPOINT` está vacío las credenciales se resuelven con la cadena estándar
+del SDK (variables de entorno, perfil de `~/.aws`, rol de instancia). Contra DynamoDB Local
+se usan credenciales ficticias, porque el emulador no las valida.
 
 ---
 

@@ -60,7 +60,6 @@ build/
 .env.*
 *.pem
 *credentials*
-!src/**
 
 ### Terraform (fase de extras) ###
 **/.terraform/*

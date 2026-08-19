@@ -4,11 +4,6 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
 
-/**
- * El cliente enhanced instancia y puebla este bean por reflexion, de modo que requiere
- * constructor sin argumentos y setters. Es la unica clase mutable del modelo y vive confinada al
- * adaptador: convertirla en record romperia el mapeo.
- */
 @DynamoDbBean
 public class FranchiseItem {
 

@@ -1,0 +1,10 @@
+app:
+  dynamodb:
+    endpoint: http://localhost:8000
+    table-name: franchises
+    region: us-east-1
+    create-table-on-startup: true
+
+logging:
+  level:
+    co.com.nequi.franchise: DEBUG

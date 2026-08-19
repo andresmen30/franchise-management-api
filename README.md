@@ -128,6 +128,7 @@ está realmente probada:
 | Reja | Sobre qué mide | Mínimos |
 |---|---|---|
 | Núcleo | `domain` y `application`, **solo con pruebas unitarias** | 95 % instrucciones · 90 % ramas |
+| Proyecto | Todo el proyecto, **solo con pruebas unitarias** | 85 % instrucciones · 70 % ramas |
 | Global | Todo el proyecto, unitarias más integración | 90 % instrucciones · 70 % ramas |
 
 La primera existe para que el dominio no pueda quedarse sin pruebas unitarias apoyándose en

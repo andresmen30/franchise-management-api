@@ -13,6 +13,7 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 
 import co.com.nequi.franchise.application.usecase.AddProductUseCase;
 import co.com.nequi.franchise.application.usecase.RemoveProductUseCase;
+import co.com.nequi.franchise.application.usecase.RenameProductUseCase;
 import co.com.nequi.franchise.application.usecase.UpdateProductStockUseCase;
 import co.com.nequi.franchise.domain.exception.BranchNotFoundException;
 import co.com.nequi.franchise.domain.exception.ProductNotFoundException;
@@ -35,6 +36,9 @@ class ProductControllerTest {
 
 	@MockitoBean
 	private UpdateProductStockUseCase updateProductStock;
+
+	@MockitoBean
+	private RenameProductUseCase renameProduct;
 
 	@Test
 	void agregaUnProductoYDevuelveLaUbicacion() {
@@ -151,6 +155,42 @@ class ProductControllerTest {
 			.expectBody()
 			.jsonPath("$.code")
 			.isEqualTo("VALIDATION_ERROR");
+	}
+
+	@Test
+	void renombraElProductoConservandoElStock() {
+		when(renameProduct.execute("franquicia-1", "sucursal-1", "producto-1", "Cafe premium"))
+			.thenReturn(Mono.just(new Product("producto-1", "Cafe premium", 40)));
+
+		client.put()
+			.uri(PRODUCTS + "/producto-1/name")
+			.contentType(MediaType.APPLICATION_JSON)
+			.bodyValue("{\"name\":\"Cafe premium\"}")
+			.exchange()
+			.expectStatus()
+			.isOk()
+			.expectBody()
+			.jsonPath("$.name")
+			.isEqualTo("Cafe premium")
+			.jsonPath("$.stock")
+			.isEqualTo(40);
+	}
+
+	@Test
+	void devuelve404AlRenombrarUnProductoInexistente() {
+		when(renameProduct.execute(any(), any(), any(), any()))
+			.thenReturn(Mono.error(new ProductNotFoundException("otro")));
+
+		client.put()
+			.uri(PRODUCTS + "/otro/name")
+			.contentType(MediaType.APPLICATION_JSON)
+			.bodyValue("{\"name\":\"Nuevo\"}")
+			.exchange()
+			.expectStatus()
+			.isNotFound()
+			.expectBody()
+			.jsonPath("$.code")
+			.isEqualTo("PRODUCT_NOT_FOUND");
 	}
 
 }

@@ -13,6 +13,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 import co.com.nequi.franchise.application.usecase.AddBranchUseCase;
+import co.com.nequi.franchise.application.usecase.RenameBranchUseCase;
+import co.com.nequi.franchise.domain.exception.BranchNotFoundException;
 import co.com.nequi.franchise.domain.exception.FranchiseNotFoundException;
 import co.com.nequi.franchise.domain.model.Branch;
 import reactor.core.publisher.Mono;
@@ -25,6 +27,9 @@ class BranchControllerTest {
 
 	@MockitoBean
 	private AddBranchUseCase addBranch;
+
+	@MockitoBean
+	private RenameBranchUseCase renameBranch;
 
 	@Test
 	void agregaUnaSucursalYDevuelveLaUbicacion() {
@@ -73,6 +78,40 @@ class BranchControllerTest {
 			.expectBody()
 			.jsonPath("$.errors[0].field")
 			.isEqualTo("name");
+	}
+
+	@Test
+	void renombraLaSucursal() {
+		when(renameBranch.execute("franquicia-1", "sucursal-1", "Centro Mayor"))
+			.thenReturn(Mono.just(new Branch("sucursal-1", "Centro Mayor", List.of())));
+
+		client.put()
+			.uri("/api/v1/franchises/franquicia-1/branches/sucursal-1/name")
+			.contentType(MediaType.APPLICATION_JSON)
+			.bodyValue("{\"name\":\"Centro Mayor\"}")
+			.exchange()
+			.expectStatus()
+			.isOk()
+			.expectBody()
+			.jsonPath("$.name")
+			.isEqualTo("Centro Mayor");
+	}
+
+	@Test
+	void devuelve404AlRenombrarUnaSucursalInexistente() {
+		when(renameBranch.execute(any(), any(), any()))
+			.thenReturn(Mono.error(new BranchNotFoundException("otra")));
+
+		client.put()
+			.uri("/api/v1/franchises/franquicia-1/branches/otra/name")
+			.contentType(MediaType.APPLICATION_JSON)
+			.bodyValue("{\"name\":\"Nuevo\"}")
+			.exchange()
+			.expectStatus()
+			.isNotFound()
+			.expectBody()
+			.jsonPath("$.code")
+			.isEqualTo("BRANCH_NOT_FOUND");
 	}
 
 }

@@ -34,10 +34,6 @@ public record Branch(String id, String name, List<Product> products) {
 		return findProduct(productId).orElseThrow(() -> new ProductNotFoundException(productId));
 	}
 
-	/**
-	 * Ante empate de stock gana el nombre alfabeticamente menor, para que el resultado no dependa
-	 * del orden en que la base devuelva los productos.
-	 */
 	public Optional<Product> productWithHighestStock() {
 		return products.stream().min(HIGHEST_STOCK_FIRST);
 	}

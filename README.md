@@ -43,8 +43,16 @@ nombre y un listado de productos; un producto, de un nombre y una cantidad de st
 docker compose up -d
 ```
 
-Expone DynamoDB en `http://localhost:8000` con almacenamiento en memoria: al detener el
-contenedor los datos se pierden, que es lo deseable para desarrollo.
+Levanta dos contenedores:
+
+| Servicio | Puerto | Para que sirve |
+|---|---|---|
+| `dynamodb-local` | 8000 | La base de datos, en memoria: al detener el contenedor los datos se pierden |
+| `dynamodb-admin` | 8001 | Visor web para inspeccionar la tabla y sus items |
+
+DynamoDB Local no tiene consola propia, por eso se incluye el visor: abre
+`http://localhost:8001` y podras recorrer la tabla `franchises`, ver cada item con su `pk` y
+`sk`, y editarlos o borrarlos a mano.
 
 ### 2. Ejecutar la aplicación
 
@@ -100,6 +108,22 @@ AWS_REGION=us-east-1 DYNAMODB_TABLE_NAME=franchises ./mvnw spring-boot:run
 
 Sin `DYNAMODB_ENDPOINT`, las credenciales se resuelven con la cadena estándar del SDK, que
 en la nube toma el rol de la tarea o instancia.
+
+### Probar la API con Postman
+
+En [`postman/`](postman/) hay una coleccion lista para importar
+(*Import → File* en Postman).
+
+Trae dos carpetas. **1 - Flujo principal** recorre los seis endpoints obligatorios en orden y
+cada peticion guarda los identificadores generados en variables de coleccion, de modo que no
+hay que copiar y pegar ids: basta con ejecutarlas de arriba abajo, o usar el Collection Runner.
+**2 - Errores** cubre los `404` y `400` y comprueba que la respuesta sea `problem+json` con su
+codigo estable.
+
+La variable `baseUrl` viene apuntando a `http://localhost:8080/api/v1`.
+
+Como alternativa, Swagger UI en `http://localhost:8080/swagger-ui.html` permite ejecutar los
+mismos endpoints desde el navegador.
 
 ### Configuración
 

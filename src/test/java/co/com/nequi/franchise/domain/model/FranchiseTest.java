@@ -29,6 +29,11 @@ class FranchiseTest {
 	}
 
 	@Test
+	void trataUnaListaNulaDeSucursalesComoVacia() {
+		assertThat(new Franchise("id-1", "Nequi Store", null).branches()).isEmpty();
+	}
+
+	@Test
 	void noExponeLaListaInternaDeSucursales() {
 		Franchise franchise = new Franchise("id-1", "Nequi Store", List.of(Branch.create("Centro")));
 

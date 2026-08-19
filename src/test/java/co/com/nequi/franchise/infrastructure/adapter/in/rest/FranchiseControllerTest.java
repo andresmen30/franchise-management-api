@@ -1,5 +1,6 @@
 package co.com.nequi.franchise.infrastructure.adapter.in.rest;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
@@ -17,6 +18,7 @@ import co.com.nequi.franchise.application.usecase.CreateFranchiseUseCase;
 import co.com.nequi.franchise.application.usecase.GetTopStockProductsUseCase;
 import co.com.nequi.franchise.domain.exception.DomainValidationException;
 import co.com.nequi.franchise.domain.exception.FranchiseNotFoundException;
+import co.com.nequi.franchise.domain.exception.RepositoryUnavailableException;
 import co.com.nequi.franchise.domain.model.Branch;
 import co.com.nequi.franchise.domain.model.BranchTopProduct;
 import co.com.nequi.franchise.domain.model.Franchise;
@@ -108,6 +110,27 @@ class FranchiseControllerTest {
 			.isEqualTo("BAD_REQUEST")
 			.jsonPath("$.instance")
 			.isEqualTo("/api/v1/franchises");
+	}
+
+	@Test
+	void traduceUnFalloDelAlmacenamientoA503SinFiltrarLaCausa() {
+		when(createFranchise.execute(any())).thenReturn(Mono.error(new RepositoryUnavailableException(
+				"No fue posible acceder al almacenamiento", new IllegalStateException("DynamoDbException: timeout"))));
+
+		client.post()
+			.uri("/api/v1/franchises")
+			.contentType(MediaType.APPLICATION_JSON)
+			.bodyValue("{\"name\":\"Nequi Store\"}")
+			.exchange()
+			.expectStatus()
+			.isEqualTo(503)
+			.expectHeader()
+			.contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON)
+			.expectBody(String.class)
+			.value(body -> {
+				assertThat(body).contains("REPOSITORY_UNAVAILABLE");
+				assertThat(body).doesNotContain("DynamoDbException", "IllegalStateException", "timeout");
+			});
 	}
 
 	@Test

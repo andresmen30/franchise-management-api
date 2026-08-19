@@ -1,6 +1,7 @@
 package co.com.nequi.franchise.infrastructure.adapter.out.dynamodb;
 
 import co.com.nequi.franchise.domain.exception.ProductNotFoundException;
+import co.com.nequi.franchise.domain.exception.RepositoryUnavailableException;
 import co.com.nequi.franchise.domain.model.Branch;
 import co.com.nequi.franchise.domain.model.Franchise;
 import co.com.nequi.franchise.domain.model.Product;
@@ -11,6 +12,7 @@ import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncTable;
 import software.amazon.awssdk.enhanced.dynamodb.Expression;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
+import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
 
 class DynamoDbFranchiseRepository implements FranchiseRepository {
@@ -58,11 +60,17 @@ class DynamoDbFranchiseRepository implements FranchiseRepository {
 						.deleteItemWithResponse(request -> request.key(key).conditionExpression(MUST_EXIST)))
 				.onErrorMap(DynamoDbFranchiseRepository::isConditionalCheckFailure,
 						error -> new ProductNotFoundException(productId))
+				.transform(DynamoDbFranchiseRepository::translate)
 				.then();
 	}
 
 	private Mono<Void> put(FranchiseItem item) {
-		return Mono.fromFuture(() -> table.putItem(item));
+		return translate(Mono.fromFuture(() -> table.putItem(item)));
+	}
+
+	private static <T> Mono<T> translate(Mono<T> operation) {
+		return operation.onErrorMap(SdkException.class,
+				error -> new RepositoryUnavailableException("No fue posible acceder al almacenamiento", error));
 	}
 
 	// El SDK entrega el fallo envuelto en CompletionException, por lo que comparar el tipo

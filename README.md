@@ -60,6 +60,10 @@ DynamoDB Local no tiene consola propia, por eso se incluye el visor: abre
 SPRING_PROFILES_ACTIVE=local ./mvnw spring-boot:run
 ```
 
+Desde IntelliJ, el repositorio incluye la configuracion de ejecucion
+**FranchiseApplication (local)**, que ya trae el perfil activo. Ejecutar la clase principal
+sin ese perfil hace que la aplicacion apunte a AWS real en lugar de al contenedor local.
+
 El perfil `local` apunta a DynamoDB Local y **crea la tabla al arrancar** si no existe.
 En cualquier otro perfil esa creación automática está apagada: en la nube la tabla se
 aprovisiona con infraestructura como código, no desde la aplicación.
@@ -67,6 +71,8 @@ aprovisiona con infraestructura como código, no desde la aplicación.
 Una vez arriba:
 
 - Health check → `http://localhost:8080/actuator/health`
+  Incluye el estado de la tabla de DynamoDB. `health/readiness` responde `503` si la base no
+  esta accesible, mientras que `health/liveness` sigue en `200` porque el proceso vive.
 - Swagger UI → `http://localhost:8080/swagger-ui.html`
 - OpenAPI JSON → `http://localhost:8080/v3/api-docs`
 

@@ -1,5 +1,7 @@
 # franchise-management-api
 
+[![build](https://github.com/andresmen30/franchise-management-api/actions/workflows/build.yml/badge.svg)](https://github.com/andresmen30/franchise-management-api/actions/workflows/build.yml)
+
 API reactiva para administrar **franquicias**, sus **sucursales** y los **productos**
 ofertados en cada sucursal.
 
@@ -119,6 +121,10 @@ dependen del `docker compose` anterior.
 - **Prueba end to end**: recorre la API completa contra la aplicación arrancada.
 - **Cobertura** (JaCoCo): mínimos de 90 % en instrucciones y 70 % en ramas sobre la suite
   combinada. El reporte queda en `target/site/jacoco/index.html`.
+
+Ese mismo comando es el que corre en integración continua: cada pull request hacia `develop`
+o `main` ejecuta `./mvnw clean verify` en GitHub Actions, con las pruebas de integración
+incluidas, y publica el reporte de cobertura como artefacto del workflow.
 
 ### 4. Ejecutar contra DynamoDB en AWS
 

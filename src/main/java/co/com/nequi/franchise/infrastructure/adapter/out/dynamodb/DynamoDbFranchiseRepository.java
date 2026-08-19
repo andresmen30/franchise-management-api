@@ -65,6 +65,8 @@ class DynamoDbFranchiseRepository implements FranchiseRepository {
 		return Mono.fromFuture(() -> table.putItem(item));
 	}
 
+	// El SDK entrega el fallo envuelto en CompletionException, por lo que comparar el tipo
+	// directamente no lo detecta.
 	private static boolean isConditionalCheckFailure(Throwable error) {
 		for (Throwable current = error; current != null; current = current.getCause()) {
 			if (current instanceof ConditionalCheckFailedException) {

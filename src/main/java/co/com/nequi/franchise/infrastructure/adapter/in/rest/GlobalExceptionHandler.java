@@ -22,6 +22,10 @@ import co.com.nequi.franchise.domain.exception.FranchiseNotFoundException;
 import co.com.nequi.franchise.domain.exception.ProductNotFoundException;
 import reactor.core.publisher.Mono;
 
+/**
+ * No se registra un handler de {@code Exception}: en WebFlux atrapa tambien las senales de
+ * cancelacion del cliente y las convertiria en respuestas de error.
+ */
 @RestControllerAdvice
 class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 

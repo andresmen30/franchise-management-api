@@ -1,0 +1,10 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="FranchiseApplication (local)" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
+    <module name="franchise-management-api" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="co.com.nequi.franchise.FranchiseApplication" />
+    <option name="ACTIVE_PROFILES" value="local" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

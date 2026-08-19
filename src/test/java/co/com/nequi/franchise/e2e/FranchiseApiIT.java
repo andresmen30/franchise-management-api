@@ -45,6 +45,7 @@ class FranchiseApiIT {
 				() -> "http://" + DYNAMODB.getHost() + ":" + DYNAMODB.getMappedPort(8000));
 		registry.add("app.dynamodb.table-name", () -> "franchises-e2e");
 		registry.add("app.dynamodb.create-table-on-startup", () -> true);
+		registry.add("management.endpoint.health.show-details", () -> "always");
 	}
 
 	@Autowired
@@ -94,6 +95,20 @@ class FranchiseApiIT {
 			.filteredOn(top -> top.branchName().equals("Centro"))
 			.singleElement()
 			.satisfies(top -> assertThat(top.productName()).isEqualTo("Te"));
+	}
+
+	@Test
+	void elReadinessReflejaElEstadoDeLaBaseDeDatos() {
+		client.get()
+			.uri("/actuator/health/readiness")
+			.exchange()
+			.expectStatus()
+			.isOk()
+			.expectBody()
+			.jsonPath("$.status")
+			.isEqualTo("UP")
+			.jsonPath("$.components.dynamoDb.status")
+			.isEqualTo("UP");
 	}
 
 	@Test

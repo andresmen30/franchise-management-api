@@ -20,7 +20,7 @@ nombre y un listado de productos; un producto, de un nombre y una cantidad de st
 | Build | Maven (con wrapper `./mvnw`) |
 | Documentación | OpenAPI 3 vía springdoc → Swagger UI |
 | Errores | RFC 9457 `application/problem+json` |
-| Pruebas | JUnit 6 · AssertJ · Reactor `StepVerifier` · `WebTestClient` · Testcontainers · ArchUnit |
+| Pruebas | JUnit 6 · AssertJ · Reactor `StepVerifier` · `WebTestClient` · Testcontainers |
 
 ---
 
@@ -92,7 +92,8 @@ se usan credenciales ficticias, porque el emulador no las valida.
 ## Arquitectura
 
 Hexagonal por paquetes dentro de un único módulo Maven. La regla es que **el dominio no
-conoce a la infraestructura**, y se verifica automáticamente con ArchUnit:
+conoce a la infraestructura**: `domain` y `application` no importan Spring, el SDK de AWS ni
+nada de `infrastructure`.
 
 ```
 co.com.nequi.franchise
@@ -128,30 +129,16 @@ stock por sucursal" sin incurrir en N+1.
 
 ```
 main        ← rama estable. Solo recibe merges desde develop vía PR.
- └ develop  ← rama de integración. Recibe cada etapa vía PR.
-    └ feature/*  ·  fix/*  ·  chore/*   ← una rama por etapa
+ └ develop  ← rama de integración.
+    └ feature/*  ·  fix/*  ·  chore/*
 ```
 
 - **Commits:** [Conventional Commits](https://www.conventionalcommits.org)
   (`feat:`, `fix:`, `chore:`, `test:`, `docs:`, `refactor:`).
-- **Regla:** ninguna rama se mergea con `./mvnw verify` en rojo.
-- Cada etapa del roadmap corresponde a una rama y un PR contra `develop`.
+- Cada rama de trabajo se integra a `develop` mediante pull request.
+- Ninguna rama se mergea con `./mvnw verify` en rojo.
 
 ---
-
-## Roadmap
-
-Criterios obligatorios primero; los puntos extra después.
-
-| Etapa | Rama | Estado |
-|---|---|---|
-| 0 · Scaffold, build y estructura hexagonal | `chore/project-setup` | ✅ |
-| 1 · Modelo de dominio e invariantes | `feature/domain-model` | ✅ |
-| 2 · Casos de uso reactivos | `feature/use-cases` | ✅ |
-| 3 · Adaptador DynamoDB + Docker Compose | `feature/dynamodb-adapter` | ✅ |
-| 4 · Adaptador REST, validación y OpenAPI | `feature/rest-api` | ✅ |
-| 5 · ArchUnit, pruebas e2e y documentación | `feature/hardening` | ⏳ |
-| Extras · Docker, renombrados, Terraform, despliegue, CI | — | ⏳ |
 
 ## API
 

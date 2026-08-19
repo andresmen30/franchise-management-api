@@ -4,6 +4,7 @@ import co.com.nequi.franchise.domain.exception.DomainValidationException;
 
 final class DomainNames {
 
+	// Acota el tamano del item persistido; DynamoDB rechaza items por encima de 400 KB.
 	private static final int MAX_LENGTH = 120;
 
 	private DomainNames() {

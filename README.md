@@ -43,14 +43,26 @@ nombre y un listado de productos; un producto, de un nombre y una cantidad de st
 docker compose up -d
 ```
 
-Expone DynamoDB en `http://localhost:8000` con almacenamiento en memoria: al detener el
-contenedor los datos se pierden, que es lo deseable para desarrollo.
+Levanta dos contenedores:
+
+| Servicio | Puerto | Para que sirve |
+|---|---|---|
+| `dynamodb-local` | 8000 | La base de datos, en memoria: al detener el contenedor los datos se pierden |
+| `dynamodb-admin` | 8001 | Visor web para inspeccionar la tabla y sus items |
+
+DynamoDB Local no tiene consola propia, por eso se incluye el visor: abre
+`http://localhost:8001` y podras recorrer la tabla `franchises`, ver cada item con su `pk` y
+`sk`, y editarlos o borrarlos a mano.
 
 ### 2. Ejecutar la aplicación
 
 ```bash
 SPRING_PROFILES_ACTIVE=local ./mvnw spring-boot:run
 ```
+
+Desde IntelliJ, el repositorio incluye la configuracion de ejecucion
+**FranchiseApplication (local)**, que ya trae el perfil activo. Ejecutar la clase principal
+sin ese perfil hace que la aplicacion apunte a AWS real en lugar de al contenedor local.
 
 El perfil `local` apunta a DynamoDB Local y **crea la tabla al arrancar** si no existe.
 En cualquier otro perfil esa creación automática está apagada: en la nube la tabla se
@@ -59,6 +71,8 @@ aprovisiona con infraestructura como código, no desde la aplicación.
 Una vez arriba:
 
 - Health check → `http://localhost:8080/actuator/health`
+  Incluye el estado de la tabla de DynamoDB. `health/readiness` responde `503` si la base no
+  esta accesible, mientras que `health/liveness` sigue en `200` porque el proceso vive.
 - Swagger UI → `http://localhost:8080/swagger-ui.html`
 - OpenAPI JSON → `http://localhost:8080/v3/api-docs`
 
@@ -100,6 +114,22 @@ AWS_REGION=us-east-1 DYNAMODB_TABLE_NAME=franchises ./mvnw spring-boot:run
 
 Sin `DYNAMODB_ENDPOINT`, las credenciales se resuelven con la cadena estándar del SDK, que
 en la nube toma el rol de la tarea o instancia.
+
+### Probar la API con Postman
+
+En [`postman/`](postman/) hay una coleccion lista para importar
+(*Import → File* en Postman).
+
+Trae dos carpetas. **1 - Flujo principal** recorre los seis endpoints obligatorios en orden y
+cada peticion guarda los identificadores generados en variables de coleccion, de modo que no
+hay que copiar y pegar ids: basta con ejecutarlas de arriba abajo, o usar el Collection Runner.
+**2 - Errores** cubre los `404` y `400` y comprueba que la respuesta sea `problem+json` con su
+codigo estable.
+
+La variable `baseUrl` viene apuntando a `http://localhost:8080/api/v1`.
+
+Como alternativa, Swagger UI en `http://localhost:8080/swagger-ui.html` permite ejecutar los
+mismos endpoints desde el navegador.
 
 ### Configuración
 

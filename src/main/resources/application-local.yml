@@ -1,9 +1,14 @@
 app:
   dynamodb:
-    endpoint: http://localhost:8000
-    table-name: franchises
-    region: us-east-1
+    endpoint: ${DYNAMODB_ENDPOINT:http://localhost:8000}
+    table-name: ${DYNAMODB_TABLE_NAME:franchises}
+    region: ${AWS_REGION:us-east-1}
     create-table-on-startup: true
+
+management:
+  endpoint:
+    health:
+      show-details: always
 
 logging:
   level:

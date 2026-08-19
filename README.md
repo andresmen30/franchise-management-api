@@ -144,10 +144,21 @@ datos, de modo que el `Dockerfile` no pueda romperse sin que nadie se entere.
 
 ### 4. Ejecutar contra DynamoDB en AWS
 
-La tabla se aprovisiona fuera de la aplicación. Para crearla:
+La infraestructura se aprovisiona con Terraform, no desde la aplicación. Desde `infra/`:
 
 ```bash
-aws dynamodb create-table --table-name franchises --billing-mode PAY_PER_REQUEST --attribute-definitions AttributeName=pk,AttributeType=S AttributeName=sk,AttributeType=S --key-schema AttributeName=pk,KeyType=HASH AttributeName=sk,KeyType=RANGE
+terraform init && terraform apply
+```
+
+Eso crea la tabla, el repositorio de ECR donde vive la imagen y el rol que asume la
+aplicación en ejecución. El rol concede exactamente las cuatro operaciones que la
+aplicación ejecuta —`Query`, `PutItem`, `DeleteItem` y `DescribeTable`— restringidas al ARN
+de esa tabla. `CreateTable` queda fuera a propósito: solo la usa el arranque en local.
+
+Los valores que necesita la aplicación salen de los outputs:
+
+```bash
+terraform output -raw table_name
 ```
 
 Si tu sesión de AWS vive en el CLI y no en un archivo de credenciales, expórtala al entorno

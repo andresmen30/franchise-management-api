@@ -213,6 +213,18 @@ Base: `/api/v1`. Los errores se devuelven como `application/problem+json` (RFC 9
 | 6 | `PUT` | `/franchises/{fId}/branches/{bId}/products/{pId}/stock` | `200` |
 | 7 | `GET` | `/franchises/{fId}/branches/top-stock-products` | `200` |
 
+Puntos extra:
+
+| Método | Ruta | Éxito |
+|---|---|---|
+| `PUT` | `/franchises/{fId}/name` | `200` |
+| `PUT` | `/franchises/{fId}/branches/{bId}/name` | `200` |
+| `PUT` | `/franchises/{fId}/branches/{bId}/products/{pId}/name` | `200` |
+
+Los tres renombrados afectan solo al nombre: renombrar una franquicia no toca sus sucursales,
+renombrar una sucursal no toca sus productos, y renombrar un producto no altera su stock. Cada
+entidad vive en su propio ítem de la tabla, así que la escritura queda acotada a ese ítem.
+
 El endpoint de stock usa `PUT` sobre el subrecurso `/stock` porque fijar el stock a un valor
 absoluto es un reemplazo idempotente: reintentar la misma petición no acumula. Un `POST` con
 un delta no lo sería.

@@ -13,9 +13,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import co.com.nequi.franchise.application.usecase.AddProductUseCase;
 import co.com.nequi.franchise.application.usecase.RemoveProductUseCase;
+import co.com.nequi.franchise.application.usecase.RenameProductUseCase;
 import co.com.nequi.franchise.application.usecase.UpdateProductStockUseCase;
 import co.com.nequi.franchise.infrastructure.adapter.in.rest.dto.CreateProductRequest;
 import co.com.nequi.franchise.infrastructure.adapter.in.rest.dto.ProductResponse;
+import co.com.nequi.franchise.infrastructure.adapter.in.rest.dto.RenameRequest;
 import co.com.nequi.franchise.infrastructure.adapter.in.rest.dto.UpdateStockRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -33,11 +35,14 @@ class ProductController {
 
 	private final UpdateProductStockUseCase updateProductStock;
 
+	private final RenameProductUseCase renameProduct;
+
 	ProductController(AddProductUseCase addProduct, RemoveProductUseCase removeProduct,
-			UpdateProductStockUseCase updateProductStock) {
+			UpdateProductStockUseCase updateProductStock, RenameProductUseCase renameProduct) {
 		this.addProduct = addProduct;
 		this.removeProduct = removeProduct;
 		this.updateProductStock = updateProductStock;
+		this.renameProduct = renameProduct;
 	}
 
 	@Operation(summary = "Agregar un nuevo producto a una sucursal")
@@ -65,6 +70,14 @@ class ProductController {
 			@PathVariable String productId, @Valid @RequestBody UpdateStockRequest request) {
 		return updateProductStock.execute(franchiseId, branchId, productId, request.stock())
 			.map(ProductResponse::from);
+	}
+
+	@Operation(summary = "Actualizar el nombre de un producto",
+			description = "Reemplaza el nombre por el valor indicado, por lo que la operacion es idempotente.")
+	@PutMapping("/{productId}/name")
+	Mono<ProductResponse> rename(@PathVariable String franchiseId, @PathVariable String branchId,
+			@PathVariable String productId, @Valid @RequestBody RenameRequest request) {
+		return renameProduct.execute(franchiseId, branchId, productId, request.name()).map(ProductResponse::from);
 	}
 
 }

@@ -85,6 +85,18 @@ class FranchiseApiIT {
 				assertThat(top.stock()).isEqualTo(500);
 			});
 
+		renombrar(http, FRANCHISES + "/{f}/name", "Nequi Store SAS", franchiseId);
+		renombrar(http, FRANCHISES + "/{f}/branches/{b}/name", "Centro Mayor", franchiseId, centro);
+		renombrar(http, FRANCHISES + "/{f}/branches/{b}/products/{p}/name", "Cafe premium", franchiseId, centro, cafe);
+
+		assertThat(topStock(http, franchiseId))
+			.filteredOn(top -> top.branchName().equals("Centro Mayor"))
+			.singleElement()
+			.satisfies(top -> {
+				assertThat(top.productName()).isEqualTo("Cafe premium");
+				assertThat(top.stock()).isEqualTo(500);
+			});
+
 		http.delete()
 			.uri(FRANCHISES + "/{f}/branches/{b}/products/{p}", franchiseId, centro, cafe)
 			.exchange()
@@ -92,9 +104,22 @@ class FranchiseApiIT {
 			.isNoContent();
 
 		assertThat(topStock(http, franchiseId))
-			.filteredOn(top -> top.branchName().equals("Centro"))
+			.filteredOn(top -> top.branchName().equals("Centro Mayor"))
 			.singleElement()
 			.satisfies(top -> assertThat(top.productName()).isEqualTo("Te"));
+	}
+
+	private void renombrar(WebTestClient http, String uri, String nuevoNombre, Object... variables) {
+		http.put()
+			.uri(uri, variables)
+			.contentType(MediaType.APPLICATION_JSON)
+			.bodyValue("{\"name\":\"" + nuevoNombre + "\"}")
+			.exchange()
+			.expectStatus()
+			.isOk()
+			.expectBody()
+			.jsonPath("$.name")
+			.isEqualTo(nuevoNombre);
 	}
 
 	@Test

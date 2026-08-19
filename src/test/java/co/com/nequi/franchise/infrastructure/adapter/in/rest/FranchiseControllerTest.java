@@ -16,6 +16,7 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 
 import co.com.nequi.franchise.application.usecase.CreateFranchiseUseCase;
 import co.com.nequi.franchise.application.usecase.GetTopStockProductsUseCase;
+import co.com.nequi.franchise.application.usecase.RenameFranchiseUseCase;
 import co.com.nequi.franchise.domain.exception.DomainValidationException;
 import co.com.nequi.franchise.domain.exception.FranchiseNotFoundException;
 import co.com.nequi.franchise.domain.exception.RepositoryUnavailableException;
@@ -37,6 +38,9 @@ class FranchiseControllerTest {
 
 	@MockitoBean
 	private GetTopStockProductsUseCase getTopStockProducts;
+
+	@MockitoBean
+	private RenameFranchiseUseCase renameFranchise;
 
 	@Test
 	void creaUnaFranquiciaYDevuelveLaUbicacion() {
@@ -173,6 +177,53 @@ class FranchiseControllerTest {
 			.isEqualTo("FRANCHISE_NOT_FOUND")
 			.jsonPath("$.instance")
 			.isEqualTo("/api/v1/franchises/otra/branches/top-stock-products");
+	}
+
+	@Test
+	void renombraLaFranquicia() {
+		when(renameFranchise.execute("franquicia-1", "Nequi Store SAS"))
+			.thenReturn(Mono.just(new Franchise("franquicia-1", "Nequi Store SAS", List.of())));
+
+		client.put()
+			.uri("/api/v1/franchises/franquicia-1/name")
+			.contentType(MediaType.APPLICATION_JSON)
+			.bodyValue("{\"name\":\"Nequi Store SAS\"}")
+			.exchange()
+			.expectStatus()
+			.isOk()
+			.expectBody()
+			.jsonPath("$.name")
+			.isEqualTo("Nequi Store SAS");
+	}
+
+	@Test
+	void rechazaRenombrarConNombreVacio() {
+		client.put()
+			.uri("/api/v1/franchises/franquicia-1/name")
+			.contentType(MediaType.APPLICATION_JSON)
+			.bodyValue("{\"name\":\"\"}")
+			.exchange()
+			.expectStatus()
+			.isBadRequest()
+			.expectBody()
+			.jsonPath("$.errors[0].field")
+			.isEqualTo("name");
+	}
+
+	@Test
+	void devuelve404AlRenombrarUnaFranquiciaInexistente() {
+		when(renameFranchise.execute(any(), any())).thenReturn(Mono.error(new FranchiseNotFoundException("otra")));
+
+		client.put()
+			.uri("/api/v1/franchises/otra/name")
+			.contentType(MediaType.APPLICATION_JSON)
+			.bodyValue("{\"name\":\"Nuevo\"}")
+			.exchange()
+			.expectStatus()
+			.isNotFound()
+			.expectBody()
+			.jsonPath("$.code")
+			.isEqualTo("FRANCHISE_NOT_FOUND");
 	}
 
 }

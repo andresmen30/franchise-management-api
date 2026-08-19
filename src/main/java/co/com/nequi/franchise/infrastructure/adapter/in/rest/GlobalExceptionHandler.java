@@ -20,6 +20,7 @@ import co.com.nequi.franchise.domain.exception.DomainException;
 import co.com.nequi.franchise.domain.exception.DomainValidationException;
 import co.com.nequi.franchise.domain.exception.FranchiseNotFoundException;
 import co.com.nequi.franchise.domain.exception.ProductNotFoundException;
+import co.com.nequi.franchise.domain.exception.RepositoryUnavailableException;
 import reactor.core.publisher.Mono;
 
 /**
@@ -33,6 +34,8 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
 	private static final URI VALIDATION_TYPE = URI.create("urn:franchise-api:solicitud-invalida");
 
+	private static final URI UNAVAILABLE_TYPE = URI.create("urn:franchise-api:dependencia-no-disponible");
+
 	@ExceptionHandler({ FranchiseNotFoundException.class, BranchNotFoundException.class,
 			ProductNotFoundException.class })
 	ProblemDetail handleNotFound(DomainException exception, ServerWebExchange exchange) {
@@ -44,6 +47,14 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 	ProblemDetail handleDomainValidation(DomainValidationException exception, ServerWebExchange exchange) {
 		return problem(HttpStatus.BAD_REQUEST, VALIDATION_TYPE, "Solicitud invalida", exception.getMessage(),
 				codeFor(exception), exchange);
+	}
+
+	@ExceptionHandler(RepositoryUnavailableException.class)
+	ProblemDetail handleRepositoryUnavailable(RepositoryUnavailableException exception,
+			ServerWebExchange exchange) {
+		logger.error("El almacenamiento rechazo la operacion", exception);
+		return problem(HttpStatus.SERVICE_UNAVAILABLE, UNAVAILABLE_TYPE, "Dependencia no disponible",
+				"El almacenamiento no esta disponible en este momento", "REPOSITORY_UNAVAILABLE", exchange);
 	}
 
 	@Override
@@ -88,6 +99,7 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 			case BranchNotFoundException ignored -> "BRANCH_NOT_FOUND";
 			case ProductNotFoundException ignored -> "PRODUCT_NOT_FOUND";
 			case DomainValidationException ignored -> "VALIDATION_ERROR";
+			case RepositoryUnavailableException ignored -> "REPOSITORY_UNAVAILABLE";
 			default -> "DOMAIN_ERROR";
 		};
 	}

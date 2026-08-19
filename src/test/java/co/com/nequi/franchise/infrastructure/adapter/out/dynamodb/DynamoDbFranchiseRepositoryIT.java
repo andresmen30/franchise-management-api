@@ -1,11 +1,13 @@
 package co.com.nequi.franchise.infrastructure.adapter.out.dynamodb;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -21,6 +23,7 @@ import co.com.nequi.franchise.domain.model.Franchise;
 import co.com.nequi.franchise.domain.model.Product;
 import co.com.nequi.franchise.domain.port.out.FranchiseRepository;
 import reactor.test.StepVerifier;
+import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
 
 @Testcontainers
 @SpringBootTest
@@ -43,6 +46,17 @@ class DynamoDbFranchiseRepositoryIT {
 
 	@Autowired
 	private FranchiseRepository repository;
+
+	@Autowired
+	private DynamoDbAsyncClient dynamoDbClient;
+
+	@Value("${app.dynamodb.table-name}")
+	private String tableName;
+
+	@Test
+	void crearLaTablaEsIdempotenteParaSoportarReinicios() {
+		assertThatCode(() -> FranchiseTable.createIfMissing(dynamoDbClient, tableName)).doesNotThrowAnyException();
+	}
 
 	@Test
 	void guardaYRecuperaUnaFranquiciaSinSucursales() {

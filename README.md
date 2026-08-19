@@ -20,7 +20,7 @@ nombre y un listado de productos; un producto, de un nombre y una cantidad de st
 | Build | Maven (con wrapper `./mvnw`) |
 | Documentación | OpenAPI 3 vía springdoc → Swagger UI |
 | Errores | RFC 9457 `application/problem+json` |
-| Pruebas | JUnit 6 · AssertJ · Reactor `StepVerifier` · `WebTestClient` · Testcontainers |
+| Pruebas | JUnit 6 · AssertJ · Reactor `StepVerifier` · `WebTestClient` · Testcontainers · ArchUnit · JaCoCo |
 
 ---
 
@@ -72,6 +72,35 @@ Las unitarias corren siempre. Las de integración (`*IT`) levantan su propio con
 DynamoDB Local con Testcontainers, así que **requieren Docker en ejecución** pero no
 dependen del `docker compose` anterior.
 
+`verify` incluye tres verificaciones adicionales:
+
+- **Reglas de arquitectura** (ArchUnit): la dirección de dependencias entre capas.
+- **Prueba end to end**: recorre la API completa contra la aplicación arrancada.
+- **Cobertura** (JaCoCo): mínimos de 90 % en instrucciones y 70 % en ramas sobre la suite
+  combinada. El reporte queda en `target/site/jacoco/index.html`.
+
+### 4. Ejecutar contra DynamoDB en AWS
+
+La tabla se aprovisiona fuera de la aplicación. Para crearla:
+
+```bash
+aws dynamodb create-table --table-name franchises --billing-mode PAY_PER_REQUEST --attribute-definitions AttributeName=pk,AttributeType=S AttributeName=sk,AttributeType=S --key-schema AttributeName=pk,KeyType=HASH AttributeName=sk,KeyType=RANGE
+```
+
+Si tu sesión de AWS vive en el CLI y no en un archivo de credenciales, expórtala al entorno
+antes de arrancar; el SDK de Java no lee todos los formatos de sesión del CLI:
+
+```bash
+eval "$(aws configure export-credentials --format env)"
+```
+
+```bash
+AWS_REGION=us-east-1 DYNAMODB_TABLE_NAME=franchises ./mvnw spring-boot:run
+```
+
+Sin `DYNAMODB_ENDPOINT`, las credenciales se resuelven con la cadena estándar del SDK, que
+en la nube toma el rol de la tarea o instancia.
+
 ### Configuración
 
 Todo se parametriza por variable de entorno, con valores por defecto aptos para local:
@@ -93,7 +122,8 @@ se usan credenciales ficticias, porque el emulador no las valida.
 
 Hexagonal por paquetes dentro de un único módulo Maven. La regla es que **el dominio no
 conoce a la infraestructura**: `domain` y `application` no importan Spring, el SDK de AWS ni
-nada de `infrastructure`.
+nada de `infrastructure`. Ocho reglas de ArchUnit lo verifican en cada `verify`, incluida la
+única excepción admitida: el puerto expresa su contrato en tipos de Reactor.
 
 ```
 co.com.nequi.franchise
@@ -166,6 +196,7 @@ por nombre ascendente para que la respuesta no dependa del orden de almacenamien
 |---|---|---|
 | Campo inválido o ausente | `400` | `VALIDATION_ERROR` |
 | Cuerpo mal formado | `400` | `BAD_REQUEST` |
+| Almacenamiento no disponible | `503` | `REPOSITORY_UNAVAILABLE` |
 | Franquicia inexistente | `404` | `FRANCHISE_NOT_FOUND` |
 | Sucursal inexistente | `404` | `BRANCH_NOT_FOUND` |
 | Producto inexistente | `404` | `PRODUCT_NOT_FOUND` |

@@ -1,5 +1,7 @@
 # franchise-management-api
 
+[![build](https://github.com/andresmen30/franchise-management-api/actions/workflows/build.yml/badge.svg)](https://github.com/andresmen30/franchise-management-api/actions/workflows/build.yml)
+
 API reactiva para administrar **franquicias**, sus **sucursales** y los **productos**
 ofertados en cada sucursal.
 
@@ -76,6 +78,33 @@ Una vez arriba:
 - Swagger UI → `http://localhost:8080/swagger-ui.html`
 - OpenAPI JSON → `http://localhost:8080/v3/api-docs`
 
+### Alternativa: ejecutar todo en contenedores
+
+Si prefieres no levantar la aplicación desde el IDE ni con Maven:
+
+```bash
+docker compose --profile app up -d --build
+```
+
+Eso construye la imagen y levanta la aplicación junto a la base y el visor. Sin el perfil
+`app`, `docker compose up -d` sigue levantando solo la base y el visor, que es el flujo de
+desarrollo habitual.
+
+La imagen es multi-stage: compila con JDK 21 y ejecuta sobre `eclipse-temurin:21-jre-alpine`,
+corre con un usuario sin privilegios y trae `HEALTHCHECK`. El jar se extrae por capas
+(`-Djarmode=tools extract --layers`) para que las dependencias queden en una capa distinta
+del código de la aplicación: un cambio de código no invalida la capa pesada.
+
+Para construir la imagen dirigida a AWS, que ejecuta `x86_64`:
+
+```bash
+docker buildx build --platform linux/amd64 -t franchise-management-api:latest .
+```
+
+La etapa de compilación está fijada a `$BUILDPLATFORM`, así que Maven corre de forma nativa
+aunque la imagen final sea de otra arquitectura. El bytecode de Java es independiente de la
+plataforma, de modo que solo el runtime necesita coincidir con el destino.
+
 ### 3. Ejecutar las pruebas
 
 ```bash
@@ -93,13 +122,87 @@ dependen del `docker compose` anterior.
 - **Cobertura** (JaCoCo): mínimos de 90 % en instrucciones y 70 % en ramas sobre la suite
   combinada. El reporte queda en `target/site/jacoco/index.html`.
 
+La cobertura se verifica en dos niveles, porque un solo porcentaje global esconde qué capa
+está realmente probada:
+
+| Reja | Sobre qué mide | Mínimos |
+|---|---|---|
+| Núcleo | `domain` y `application`, **solo con pruebas unitarias** | 95 % instrucciones · 90 % ramas |
+| Proyecto | Todo el proyecto, **solo con pruebas unitarias** | 85 % instrucciones · 70 % ramas |
+| Global | Todo el proyecto, unitarias más integración | 90 % instrucciones · 70 % ramas |
+
+La primera existe para que el dominio no pueda quedarse sin pruebas unitarias apoyándose en
+que el recorrido end to end lo atraviesa. El adaptador de DynamoDB, en cambio, se cubre
+deliberadamente por integración: probar el mapeo de ítems contra objetos fabricados sería una
+prueba más débil que hacerlo contra el motor real.
+
+Ese mismo comando es el que corre en integración continua: cada pull request hacia `develop`
+o `main` ejecuta `./mvnw clean verify` en GitHub Actions, con las pruebas de integración
+incluidas, y publica el reporte de cobertura como artefacto del workflow. Un segundo job
+construye la imagen Docker para `linux/amd64` y comprueba que arranque y alcance la base de
+datos, de modo que el `Dockerfile` no pueda romperse sin que nadie se entere.
+
 ### 4. Ejecutar contra DynamoDB en AWS
 
-La tabla se aprovisiona fuera de la aplicación. Para crearla:
+La infraestructura se aprovisiona con Terraform, no desde la aplicación. Desde `infra/`:
 
 ```bash
-aws dynamodb create-table --table-name franchises --billing-mode PAY_PER_REQUEST --attribute-definitions AttributeName=pk,AttributeType=S AttributeName=sk,AttributeType=S --key-schema AttributeName=pk,KeyType=HASH AttributeName=sk,KeyType=RANGE
+terraform init && terraform apply
 ```
+
+Eso crea la tabla, el repositorio de ECR donde vive la imagen y el rol que asume la
+aplicación en ejecución. El rol concede exactamente las cuatro operaciones que la
+aplicación ejecuta —`Query`, `PutItem`, `DeleteItem` y `DescribeTable`— restringidas al ARN
+de esa tabla. `CreateTable` queda fuera a propósito: solo la usa el arranque en local.
+
+Los valores que necesita la aplicación salen de los outputs:
+
+```bash
+terraform output -raw table_name
+```
+
+### Desplegar en la nube
+
+El servicio de App Runner está definido en Terraform pero **apagado por defecto**. A
+diferencia del resto de los recursos, App Runner no tiene capa gratuita: cobra la memoria
+aprovisionada aunque el servicio esté ocioso. Por eso `terraform apply` no lo crea salvo que
+se active de forma explícita.
+
+Secuencia completa, desde la raíz del repositorio:
+
+**1. Publicar la imagen en ECR**
+
+```bash
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin "$(terraform -chdir=infra output -raw ecr_repository_url | cut -d/ -f1)"
+```
+
+```bash
+docker buildx build --platform linux/amd64 -t "$(terraform -chdir=infra output -raw ecr_repository_url):latest" --push .
+```
+
+**2. Crear el servicio**
+
+```bash
+terraform -chdir=infra apply -var deploy_service=true
+```
+
+**3. Verificar**
+
+```bash
+curl -s "$(terraform -chdir=infra output -raw service_url)/actuator/health"
+```
+
+App Runner comprueba `/actuator/health/readiness`, que responde `503` mientras la tabla no
+sea accesible, de modo que no enruta tráfico hacia una instancia que no puede atender.
+
+**4. Destruir cuando ya no se necesite**
+
+```bash
+terraform -chdir=infra apply -var deploy_service=false
+```
+
+Eso elimina únicamente el servicio y su rol de acceso a ECR; la tabla y el repositorio
+permanecen. Para desmontar todo, `terraform -chdir=infra destroy`.
 
 Si tu sesión de AWS vive en el CLI y no en un archivo de credenciales, expórtala al entorno
 antes de arrancar; el SDK de Java no lee todos los formatos de sesión del CLI:
@@ -212,6 +315,18 @@ Base: `/api/v1`. Los errores se devuelven como `application/problem+json` (RFC 9
 | 5 | `DELETE` | `/franchises/{fId}/branches/{bId}/products/{pId}` | `204` |
 | 6 | `PUT` | `/franchises/{fId}/branches/{bId}/products/{pId}/stock` | `200` |
 | 7 | `GET` | `/franchises/{fId}/branches/top-stock-products` | `200` |
+
+Puntos extra:
+
+| Método | Ruta | Éxito |
+|---|---|---|
+| `PUT` | `/franchises/{fId}/name` | `200` |
+| `PUT` | `/franchises/{fId}/branches/{bId}/name` | `200` |
+| `PUT` | `/franchises/{fId}/branches/{bId}/products/{pId}/name` | `200` |
+
+Los tres renombrados afectan solo al nombre: renombrar una franquicia no toca sus sucursales,
+renombrar una sucursal no toca sus productos, y renombrar un producto no altera su stock. Cada
+entidad vive en su propio ítem de la tabla, así que la escritura queda acotada a ese ítem.
 
 El endpoint de stock usa `PUT` sobre el subrecurso `/stock` porque fijar el stock a un valor
 absoluto es un reemplazo idempotente: reintentar la misma petición no acumula. Un `POST` con

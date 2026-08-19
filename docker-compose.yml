@@ -8,7 +8,7 @@ services:
     restart: unless-stopped
 
   dynamodb-admin:
-    image: aaronshaf/dynamodb-admin:latest
+    image: aaronshaf/dynamodb-admin@sha256:ac41724cd99706256d405a14a5fb96f51f18c41a630c84fa3357f900cbd16d2e
     container_name: franchise-dynamodb-admin
     ports:
       - "8001:8001"
@@ -20,3 +20,17 @@ services:
     depends_on:
       - dynamodb-local
     restart: unless-stopped
+
+  app:
+    build: .
+    image: franchise-management-api:local
+    container_name: franchise-app
+    profiles: ["app"]
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      DYNAMODB_ENDPOINT: http://dynamodb-local:8000
+      DYNAMODB_TABLE_NAME: franchises
+    depends_on:
+      - dynamodb-local

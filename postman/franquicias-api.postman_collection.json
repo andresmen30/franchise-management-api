@@ -425,7 +425,176 @@
       ]
     },
     {
-      "name": "2 - Errores",
+      "name": "2 - Renombrados",
+      "item": [
+        {
+          "name": "Renombrar franquicia",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/franchises/{{franchiseId}}/name",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "franchises",
+                "{{franchiseId}}",
+                "name"
+              ]
+            },
+            "description": "Punto extra. Renombrar no altera las sucursales.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Nequi Store SAS\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('nombre actualizado', () => pm.expect(pm.response.json().name).to.eql('Nequi Store SAS'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Renombrar sucursal",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/franchises/{{franchiseId}}/branches/{{branchId}}/name",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "franchises",
+                "{{franchiseId}}",
+                "branches",
+                "{{branchId}}",
+                "name"
+              ]
+            },
+            "description": "Punto extra. Renombrar no altera los productos de la sucursal.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Centro Mayor\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('nombre actualizado', () => pm.expect(pm.response.json().name).to.eql('Centro Mayor'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Renombrar producto",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/franchises/{{franchiseId}}/branches/{{branchId}}/products/{{productId}}/name",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "franchises",
+                "{{franchiseId}}",
+                "branches",
+                "{{branchId}}",
+                "products",
+                "{{productId}}",
+                "name"
+              ]
+            },
+            "description": "Punto extra. Renombrar no altera el stock.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Cafe premium\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('nombre actualizado', () => pm.expect(pm.response.json().name).to.eql('Cafe premium'));",
+                  "pm.test('el stock no cambio', () => pm.expect(pm.response.json().stock).to.eql(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar que el renombrado se refleja",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/franchises/{{franchiseId}}/branches/top-stock-products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "franchises",
+                "{{franchiseId}}",
+                "branches",
+                "top-stock-products"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const centro = pm.response.json().find(x => x.branchName === 'Centro Mayor');",
+                  "pm.test('sucursal renombrada presente', () => pm.expect(centro).to.not.be.undefined);",
+                  "pm.test('producto renombrado presente', () => pm.expect(centro.productName).to.eql('Cafe premium'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3 - Errores",
       "item": [
         {
           "name": "404 - franquicia inexistente",

@@ -8,6 +8,9 @@ import co.com.nequi.franchise.application.usecase.AddProductUseCase;
 import co.com.nequi.franchise.application.usecase.CreateFranchiseUseCase;
 import co.com.nequi.franchise.application.usecase.GetTopStockProductsUseCase;
 import co.com.nequi.franchise.application.usecase.RemoveProductUseCase;
+import co.com.nequi.franchise.application.usecase.RenameBranchUseCase;
+import co.com.nequi.franchise.application.usecase.RenameFranchiseUseCase;
+import co.com.nequi.franchise.application.usecase.RenameProductUseCase;
 import co.com.nequi.franchise.application.usecase.UpdateProductStockUseCase;
 import co.com.nequi.franchise.domain.port.out.FranchiseRepository;
 
@@ -42,6 +45,21 @@ class UseCaseConfiguration {
 	@Bean
 	GetTopStockProductsUseCase getTopStockProductsUseCase(FranchiseRepository repository) {
 		return new GetTopStockProductsUseCase(repository);
+	}
+
+	@Bean
+	RenameFranchiseUseCase renameFranchiseUseCase(FranchiseRepository repository) {
+		return new RenameFranchiseUseCase(repository);
+	}
+
+	@Bean
+	RenameBranchUseCase renameBranchUseCase(FranchiseRepository repository) {
+		return new RenameBranchUseCase(repository);
+	}
+
+	@Bean
+	RenameProductUseCase renameProductUseCase(FranchiseRepository repository) {
+		return new RenameProductUseCase(repository);
 	}
 
 }

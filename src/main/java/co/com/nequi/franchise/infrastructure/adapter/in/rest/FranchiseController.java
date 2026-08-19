@@ -6,14 +6,17 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import co.com.nequi.franchise.application.usecase.CreateFranchiseUseCase;
 import co.com.nequi.franchise.application.usecase.GetTopStockProductsUseCase;
+import co.com.nequi.franchise.application.usecase.RenameFranchiseUseCase;
 import co.com.nequi.franchise.infrastructure.adapter.in.rest.dto.CreateFranchiseRequest;
 import co.com.nequi.franchise.infrastructure.adapter.in.rest.dto.FranchiseResponse;
+import co.com.nequi.franchise.infrastructure.adapter.in.rest.dto.RenameRequest;
 import co.com.nequi.franchise.infrastructure.adapter.in.rest.dto.TopStockProductResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -30,9 +33,13 @@ class FranchiseController {
 
 	private final GetTopStockProductsUseCase getTopStockProducts;
 
-	FranchiseController(CreateFranchiseUseCase createFranchise, GetTopStockProductsUseCase getTopStockProducts) {
+	private final RenameFranchiseUseCase renameFranchise;
+
+	FranchiseController(CreateFranchiseUseCase createFranchise, GetTopStockProductsUseCase getTopStockProducts,
+			RenameFranchiseUseCase renameFranchise) {
 		this.createFranchise = createFranchise;
 		this.getTopStockProducts = getTopStockProducts;
+		this.renameFranchise = renameFranchise;
 	}
 
 	@Operation(summary = "Agregar una nueva franquicia")
@@ -42,6 +49,13 @@ class FranchiseController {
 			.map(FranchiseResponse::from)
 			.map(response -> ResponseEntity.created(URI.create("/api/v1/franchises/" + response.id()))
 				.body(response));
+	}
+
+	@Operation(summary = "Actualizar el nombre de una franquicia",
+			description = "Reemplaza el nombre por el valor indicado, por lo que la operacion es idempotente.")
+	@PutMapping("/{franchiseId}/name")
+	Mono<FranchiseResponse> rename(@PathVariable String franchiseId, @Valid @RequestBody RenameRequest request) {
+		return renameFranchise.execute(franchiseId, request.name()).map(FranchiseResponse::from);
 	}
 
 	@Operation(summary = "Producto con mayor stock de cada sucursal de una franquicia",

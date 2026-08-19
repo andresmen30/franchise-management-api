@@ -76,6 +76,33 @@ Una vez arriba:
 - Swagger UI → `http://localhost:8080/swagger-ui.html`
 - OpenAPI JSON → `http://localhost:8080/v3/api-docs`
 
+### Alternativa: ejecutar todo en contenedores
+
+Si prefieres no levantar la aplicación desde el IDE ni con Maven:
+
+```bash
+docker compose --profile app up -d --build
+```
+
+Eso construye la imagen y levanta la aplicación junto a la base y el visor. Sin el perfil
+`app`, `docker compose up -d` sigue levantando solo la base y el visor, que es el flujo de
+desarrollo habitual.
+
+La imagen es multi-stage: compila con JDK 21 y ejecuta sobre `eclipse-temurin:21-jre-alpine`,
+corre con un usuario sin privilegios y trae `HEALTHCHECK`. El jar se extrae por capas
+(`-Djarmode=tools extract --layers`) para que las dependencias queden en una capa distinta
+del código de la aplicación: un cambio de código no invalida la capa pesada.
+
+Para construir la imagen dirigida a AWS, que ejecuta `x86_64`:
+
+```bash
+docker buildx build --platform linux/amd64 -t franchise-management-api:latest .
+```
+
+La etapa de compilación está fijada a `$BUILDPLATFORM`, así que Maven corre de forma nativa
+aunque la imagen final sea de otra arquitectura. El bytecode de Java es independiente de la
+plataforma, de modo que solo el runtime necesita coincidir con el destino.
+
 ### 3. Ejecutar las pruebas
 
 ```bash

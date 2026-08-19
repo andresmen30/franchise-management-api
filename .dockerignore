@@ -1,0 +1,13 @@
+target/
+.git/
+.github/
+.idea/
+.run/
+.mvn/wrapper/maven-wrapper.jar
+infra/
+postman/
+*.md
+.DS_Store
+docker-compose.yml
+Dockerfile
+.dockerignore

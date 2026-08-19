@@ -161,6 +161,49 @@ Los valores que necesita la aplicación salen de los outputs:
 terraform output -raw table_name
 ```
 
+### Desplegar en la nube
+
+El servicio de App Runner está definido en Terraform pero **apagado por defecto**. A
+diferencia del resto de los recursos, App Runner no tiene capa gratuita: cobra la memoria
+aprovisionada aunque el servicio esté ocioso. Por eso `terraform apply` no lo crea salvo que
+se active de forma explícita.
+
+Secuencia completa, desde la raíz del repositorio:
+
+**1. Publicar la imagen en ECR**
+
+```bash
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin "$(terraform -chdir=infra output -raw ecr_repository_url | cut -d/ -f1)"
+```
+
+```bash
+docker buildx build --platform linux/amd64 -t "$(terraform -chdir=infra output -raw ecr_repository_url):latest" --push .
+```
+
+**2. Crear el servicio**
+
+```bash
+terraform -chdir=infra apply -var deploy_service=true
+```
+
+**3. Verificar**
+
+```bash
+curl -s "$(terraform -chdir=infra output -raw service_url)/actuator/health"
+```
+
+App Runner comprueba `/actuator/health/readiness`, que responde `503` mientras la tabla no
+sea accesible, de modo que no enruta tráfico hacia una instancia que no puede atender.
+
+**4. Destruir cuando ya no se necesite**
+
+```bash
+terraform -chdir=infra apply -var deploy_service=false
+```
+
+Eso elimina únicamente el servicio y su rol de acceso a ECR; la tabla y el repositorio
+permanecen. Para desmontar todo, `terraform -chdir=infra destroy`.
+
 Si tu sesión de AWS vive en el CLI y no en un archivo de credenciales, expórtala al entorno
 antes de arrancar; el SDK de Java no lee todos los formatos de sesión del CLI:
 

@@ -17,3 +17,8 @@ output "app_role_arn" {
   description = "Rol que asume la aplicacion en ejecucion."
   value       = aws_iam_role.app.arn
 }
+
+output "service_url" {
+  description = "URL publica del servicio. Vacia mientras deploy_service siga apagado."
+  value       = var.deploy_service ? "https://${aws_apprunner_service.app[0].service_url}" : ""
+}

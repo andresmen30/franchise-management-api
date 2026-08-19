@@ -27,3 +27,31 @@ variable "image_versions_to_keep" {
   type        = number
   default     = 5
 }
+
+variable "deploy_service" {
+  description = <<-DESC
+    Crea el servicio de App Runner. Apagado por defecto de forma deliberada: a diferencia del
+    resto de los recursos, App Runner no tiene capa gratuita y cobra la memoria aprovisionada
+    aunque el servicio este ocioso. Encenderlo solo cuando exista una imagen publicada en ECR.
+  DESC
+  type        = bool
+  default     = false
+}
+
+variable "image_tag" {
+  description = "Etiqueta de la imagen en ECR que ejecuta el servicio."
+  type        = string
+  default     = "latest"
+}
+
+variable "service_cpu" {
+  description = "vCPU asignadas al servicio, en unidades de App Runner."
+  type        = string
+  default     = "1024"
+}
+
+variable "service_memory" {
+  description = "Memoria asignada al servicio, en MB. Es lo que se cobra aunque este ocioso."
+  type        = string
+  default     = "2048"
+}

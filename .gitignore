@@ -61,11 +61,12 @@ build/
 *.pem
 *credentials*
 
-### Terraform (fase de extras) ###
+### Terraform ###
+### El lock file SI se versiona: fija proveedores y sus hashes para todo el equipo
 **/.terraform/*
 *.tfstate
 *.tfstate.*
 *.tfvars
 !*.tfvars.example
-.terraform.lock.hcl
 crash.log
+crash.*.log

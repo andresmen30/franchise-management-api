@@ -122,9 +122,24 @@ dependen del `docker compose` anterior.
 - **Cobertura** (JaCoCo): mínimos de 90 % en instrucciones y 70 % en ramas sobre la suite
   combinada. El reporte queda en `target/site/jacoco/index.html`.
 
+La cobertura se verifica en dos niveles, porque un solo porcentaje global esconde qué capa
+está realmente probada:
+
+| Reja | Sobre qué mide | Mínimos |
+|---|---|---|
+| Núcleo | `domain` y `application`, **solo con pruebas unitarias** | 95 % instrucciones · 90 % ramas |
+| Global | Todo el proyecto, unitarias más integración | 90 % instrucciones · 70 % ramas |
+
+La primera existe para que el dominio no pueda quedarse sin pruebas unitarias apoyándose en
+que el recorrido end to end lo atraviesa. El adaptador de DynamoDB, en cambio, se cubre
+deliberadamente por integración: probar el mapeo de ítems contra objetos fabricados sería una
+prueba más débil que hacerlo contra el motor real.
+
 Ese mismo comando es el que corre en integración continua: cada pull request hacia `develop`
 o `main` ejecuta `./mvnw clean verify` en GitHub Actions, con las pruebas de integración
-incluidas, y publica el reporte de cobertura como artefacto del workflow.
+incluidas, y publica el reporte de cobertura como artefacto del workflow. Un segundo job
+construye la imagen Docker para `linux/amd64` y comprueba que arranque y alcance la base de
+datos, de modo que el `Dockerfile` no pueda romperse sin que nadie se entere.
 
 ### 4. Ejecutar contra DynamoDB en AWS
 

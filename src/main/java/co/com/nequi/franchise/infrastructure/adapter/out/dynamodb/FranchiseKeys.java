@@ -1,9 +1,5 @@
 package co.com.nequi.franchise.infrastructure.adapter.out.dynamodb;
 
-/**
- * Esquema de claves de la tabla. El formato de {@code sk} es un contrato con los datos ya
- * almacenados: cambiarlo deja inalcanzables los items existentes y exige migrarlos.
- */
 final class FranchiseKeys {
 
 	static final String METADATA = "METADATA";

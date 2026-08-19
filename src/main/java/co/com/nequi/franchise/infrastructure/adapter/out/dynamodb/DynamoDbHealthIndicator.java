@@ -8,10 +8,6 @@ import org.springframework.boot.health.contributor.ReactiveHealthIndicator;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
 
-/**
- * Sin esta comprobacion la aplicacion se reporta disponible aunque la tabla sea inalcanzable, y el
- * fallo solo aparece cuando llega la primera peticion de negocio.
- */
 public class DynamoDbHealthIndicator implements ReactiveHealthIndicator {
 
 	private static final Duration TIMEOUT = Duration.ofSeconds(3);

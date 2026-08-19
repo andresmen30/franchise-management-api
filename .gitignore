@@ -46,7 +46,7 @@ build/
 ### VS Code ###
 .vscode/
 
-### Claude Code ###
+### Herramientas locales ###
 .claude/
 
 ### macOS ###
@@ -62,7 +62,6 @@ build/
 *credentials*
 
 ### Terraform ###
-### El lock file SI se versiona: fija proveedores y sus hashes para todo el equipo
 **/.terraform/*
 *.tfstate
 *.tfstate.*
